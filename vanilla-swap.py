@@ -8,6 +8,7 @@ from scipy.interpolate import CubicSpline
 from matplotlib.finance import date2num
 import marketdata
 import datetools
+import solver
 
 DATE_FORMAT = '%d/%m/%Y'
 
@@ -42,12 +43,23 @@ class Coupon:
         self.daycount = daycount
         self.NbYears = datetools.year_frac(self.StartDate, self.EndDate, self.daycount)
     
-    def getDiscountFactor(self, discount_curve):
+    def calcDiscountFactor(self, discount_curve):
         dates = [date2num(p.EndDate) for p in discount_curve]
         dfs = [p.DiscountFactor for p in discount_curve]
         cs = CubicSpline(dates, dfs)
         self.StartDiscountFactor = cs(date2num(self.StartDate))
         self.EndDiscountFactor = cs(date2num(self.EndDate))
+        
+    def calcForwardRate(self):
+        forwardDf = self.EndDiscountFactor/self.StartDiscountFactor
+        self.forwardRate = ((1/forwardDf) - 1) / self.NbYears
+    
+    def calcCashFlow(self, notional, spread=0.0, last=False):
+        couponRate = float(self.forwardRate) + spread
+        redemption = 0.0
+        if last:
+            redemption = 1.0
+        self.CashFlow = (redemption + (couponRate * self.NbYears)) * notional
         
 # Calculate coupon dates
 def get_coupon_dates(settle, maturity, frequency):
@@ -103,14 +115,23 @@ def calc_zc_dates(value_date, period):
         return start_date, add_period(start_date, period)
     
 # Get settlement date, maturity and coupon frequency
-#value_date = input('Please provide valuation date (format: dd/mm/yyyy)>')
-value_date = '31/1/2017' #for debugging
-#settle = input('Please provide settlement date (format: dd/mm/yyyy)>')
-settle = '1/2/2017' #for debugging
-#tenor = input('Please provide swap tenor in mumber of years>')
-tenor = 5 #for debugging
-#frequency = input('Please provide fixed leg coupon frequency (A/S/Q/M)>'), input('Please provide float leg coupon frequency (A/S/Q/M)>')
-frequency = ('A', 'S') #for debugging
+value_date = input('Please provide valuation date (format: dd/mm/yyyy)>')
+settle = input('Please provide settlement date (format: dd/mm/yyyy)>')
+frequency = input('Please provide fixed leg coupon frequency (A/S/Q/M)>'), input('Please provide float leg coupon frequency (A/S/Q/M)>')
+notional = float(input('Please provide the notional value>'))
+tenor = input('Please provide swap tenor in number of years>')
+currentFloat = float(input('Please provide the current index value>'))
+spread = float(input('Please provide the bp spread over the index rate>'))
+npv = float(input('Please provide the swap NPV>'))
+#value_date = '31/1/2017' #for debugging
+#settle = '1/2/2017' #for debugging
+#frequency = ('A', 'S') #for debugging
+#notional = 10000000 #for debugging
+#tenor = 5 #for debugging
+#currentFloat = 0.05 #for debugging
+#spread = 0.001 #for debugging
+#npv = 0 #for debugging
+print('')
 
 # Calculate maturity date
 value_date = datetime.strptime(value_date, DATE_FORMAT)
@@ -119,31 +140,50 @@ maturity = add_period(settle, str(tenor) + 'Y')
 print('Calculated maturity: ' + datetime.strftime(maturity, DATE_FORMAT))
 
 # Calculate coupon dates
-print('Fixed leg coupon dates:')
 fixed_coupons = list(get_coupon_dates(settle, maturity, frequency_dict[frequency[0]]))[::-1]
-for d in fixed_coupons:
-    print('Start: {!s}, End: {!s}, Years: {!s}'.format(datetime.strftime(d.StartDate,DATE_FORMAT), datetime.strftime(d.EndDate,DATE_FORMAT), d.NbYears))
-
-print('Float leg coupon dates:')
 float_coupons = list(get_coupon_dates(settle, maturity, frequency_dict[frequency[1]]))[::-1]
-for d in float_coupons:
-    print('Start: {!s}, End: {!s}, Years: {!s}'.format(datetime.strftime(d.StartDate,DATE_FORMAT), datetime.strftime(d.EndDate,DATE_FORMAT), d.NbYears))
 
+print('')
 # Generate discount curve
 print('Discount curve (from file)')
 zc_curve = [ZeroCouponDataPoint(value_date, k, v) for k, v in marketdata.discount_curve.items()]
 zc_curve.sort(key=attrgetter('EndDate'))
 for p in zc_curve:
-    print('Period: {}, Start: {!s}, End: {!s}, DF: {!s}'.format(p.Period, datetime.strftime(p.StartDate,DATE_FORMAT), datetime.strftime(p.EndDate,DATE_FORMAT), p.DiscountFactor))
-
-# Interpolate discount factors
-print('Interpolate discount factors for each fixed coupon')
-[c.getDiscountFactor(zc_curve) for c in fixed_coupons]
-for c in fixed_coupons:
-    print('Date: {!s}, Discount Factor: {!s}'.format(datetime.strftime(c.EndDate,DATE_FORMAT), c.EndDiscountFactor))
+    print('Period: {}, Date: {!s}, DF: {!s}'.format(p.Period, datetime.strftime(p.EndDate,DATE_FORMAT), p.DiscountFactor))
     
-print('Interpolate discount factors for each float coupon')
-[c.getDiscountFactor(zc_curve) for c in float_coupons]
+print('')
+print('Calculate floating cash flows')
+# Calculate coupon rates
+[c.calcDiscountFactor(zc_curve) for c in float_coupons]
+[c.calcForwardRate() for c in float_coupons]
+# Set current float
+float_coupons[0].forwardRate = currentFloat
+[c.calcCashFlow(notional, spread) for c in float_coupons]
+# Re-calculate final cash flow (with redemption)
+float_coupons[-1].calcCashFlow(notional, spread, True)
 for c in float_coupons:
-    print('Date: {!s}, Discount Factor: {!s}'.format(datetime.strftime(c.EndDate,DATE_FORMAT), c.EndDiscountFactor))
+    print('Date: {!s}, Rate: {!s} Cash flow: {!s}'.format(datetime.strftime(c.EndDate,DATE_FORMAT), c.forwardRate, c.CashFlow))
     
+print('')
+# Calculate float leg NPV
+floatLegNpv = sum([cf.CashFlow * cf.EndDiscountFactor for cf in float_coupons])
+targetLegNpv = floatLegNpv - npv
+print('Float leg NPV =', floatLegNpv, ', Target leg NPV =', targetLegNpv)
+
+print('')
+print('Calculate fixed cash flows')
+# Solve for coupon rate
+[c.calcDiscountFactor(zc_curve) for c in fixed_coupons]
+fixedRate = solver.solve(notional, fixed_coupons, targetLegNpv)
+for c in fixed_coupons:
+    c.forwardRate = fixedRate
+[c.calcCashFlow(notional) for c in fixed_coupons]
+# Re-calculate final cash flow (with redemption)
+fixed_coupons[-1].calcCashFlow(notional, 0, True)
+
+for c in fixed_coupons:
+    print('Date: {!s}, Rate: {!s} Cash flow: {!s}'.format(datetime.strftime(c.EndDate,DATE_FORMAT), c.forwardRate, c.CashFlow))
+
+print('')
+# Output final result
+print('Calculated fixed rate:', fixedRate)
