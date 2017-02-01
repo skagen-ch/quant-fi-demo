@@ -3,7 +3,7 @@ from datetime import date
 from datetime import datetime
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
-from operator import itemgetter
+from operator import attrgetter
 import marketdata
 
 DATE_FORMAT = '%d/%m/%Y'
@@ -16,6 +16,19 @@ frequency_dict = {
     'M' : 1
 }
 
+# Zero Coupon curve data point
+class ZeroCouponDataPoint:
+    'Object representing each point on a discount curve'
+    def __init__(self, value_date, period, df):
+        self.ValueDate = value_date
+        self.Period = period
+        self.DiscountFactor = df
+        self.zcDates = calc_zc_dates(self.ValueDate, self.Period)
+        self.StartDate = self.zcDates[0]
+        self.EndDate = self.zcDates[1]
+
+
+        
 # Calculate coupon dates
 def get_coupon_dates(settle, maturity, frequency):
     coupon_date = maturity
@@ -98,7 +111,8 @@ for d in float_coupons:
 
 # Generate discount curve
 print('Discount curve (from file)')
-zc_curve = [calc_zc_dates(value_date, p) + (p, marketdata.discount_curve[p]) for p in marketdata.discount_curve.keys()]
-zc_curve.sort(key=itemgetter(1))
+zc_curve = [ZeroCouponDataPoint(value_date, k, v) for k, v in marketdata.discount_curve.items()]
+zc_curve.sort(key=attrgetter('EndDate'))
 for p in zc_curve:
-    print('Period: {}, Start: {!s}, End: {!s}, DF: {!s}'.format(p[2], datetime.strftime(p[0],DATE_FORMAT), datetime.strftime(p[1],DATE_FORMAT), p[3]))
+    print('Period: {}, Start: {!s}, End: {!s}, DF: {!s}'.format(p.Period, datetime.strftime(p.StartDate,DATE_FORMAT), datetime.strftime(p.EndDate,DATE_FORMAT), p.DiscountFactor))
+
