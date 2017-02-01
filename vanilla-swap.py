@@ -4,7 +4,10 @@ from datetime import datetime
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from operator import attrgetter
+from scipy.interpolate import CubicSpline
+from matplotlib.finance import date2num
 import marketdata
+import datetools
 
 DATE_FORMAT = '%d/%m/%Y'
 
@@ -27,14 +30,31 @@ class ZeroCouponDataPoint:
         self.StartDate = self.zcDates[0]
         self.EndDate = self.zcDates[1]
 
-
+# Coupon base class
+class Coupon:
+    'Coupon base class'
+    StartDiscountFactor = EndDiscountFactor = 1
+    
+    def __init__(self, coupon_dates, daycount='ACTACT'):
+        self.StartDate = coupon_dates[0]
+        self.EndDate = coupon_dates[1]
+        self.NbDays = (self.EndDate - self.StartDate).days
+        self.daycount = daycount
+        self.NbYears = datetools.year_frac(self.StartDate, self.EndDate, self.daycount)
+    
+    def getDiscountFactor(self, discount_curve):
+        dates = [date2num(p.EndDate) for p in discount_curve]
+        dfs = [p.DiscountFactor for p in discount_curve]
+        cs = CubicSpline(dates, dfs)
+        self.StartDiscountFactor = cs(date2num(self.StartDate))
+        self.EndDiscountFactor = cs(date2num(self.EndDate))
         
 # Calculate coupon dates
 def get_coupon_dates(settle, maturity, frequency):
-    coupon_date = maturity
-    while coupon_date > settle:
-        yield coupon_date
-        coupon_date = coupon_date - relativedelta(months = frequency)
+    coupon_dates = maturity - relativedelta(months = frequency), maturity
+    while coupon_dates[0] > settle:
+        yield Coupon(coupon_dates, daycount='ACT360')
+        coupon_dates = coupon_dates[0] - relativedelta(months = frequency), coupon_dates[0] 
 
 # Add period to date
 def add_period(start_date, period):
@@ -100,14 +120,14 @@ print('Calculated maturity: ' + datetime.strftime(maturity, DATE_FORMAT))
 
 # Calculate coupon dates
 print('Fixed leg coupon dates:')
-fixed_coupons = get_coupon_dates(settle, maturity, frequency_dict[frequency[0]])
+fixed_coupons = list(get_coupon_dates(settle, maturity, frequency_dict[frequency[0]]))[::-1]
 for d in fixed_coupons:
-    print(datetime.strftime(d, DATE_FORMAT))
+    print('Start: {!s}, End: {!s}, Years: {!s}'.format(datetime.strftime(d.StartDate,DATE_FORMAT), datetime.strftime(d.EndDate,DATE_FORMAT), d.NbYears))
 
 print('Float leg coupon dates:')
-float_coupons = get_coupon_dates(settle, maturity, frequency_dict[frequency[1]])
+float_coupons = list(get_coupon_dates(settle, maturity, frequency_dict[frequency[1]]))[::-1]
 for d in float_coupons:
-    print(datetime.strftime(d, DATE_FORMAT))
+    print('Start: {!s}, End: {!s}, Years: {!s}'.format(datetime.strftime(d.StartDate,DATE_FORMAT), datetime.strftime(d.EndDate,DATE_FORMAT), d.NbYears))
 
 # Generate discount curve
 print('Discount curve (from file)')
@@ -116,3 +136,14 @@ zc_curve.sort(key=attrgetter('EndDate'))
 for p in zc_curve:
     print('Period: {}, Start: {!s}, End: {!s}, DF: {!s}'.format(p.Period, datetime.strftime(p.StartDate,DATE_FORMAT), datetime.strftime(p.EndDate,DATE_FORMAT), p.DiscountFactor))
 
+# Interpolate discount factors
+print('Interpolate discount factors for each fixed coupon')
+[c.getDiscountFactor(zc_curve) for c in fixed_coupons]
+for c in fixed_coupons:
+    print('Date: {!s}, Discount Factor: {!s}'.format(datetime.strftime(c.EndDate,DATE_FORMAT), c.EndDiscountFactor))
+    
+print('Interpolate discount factors for each float coupon')
+[c.getDiscountFactor(zc_curve) for c in float_coupons]
+for c in float_coupons:
+    print('Date: {!s}, Discount Factor: {!s}'.format(datetime.strftime(c.EndDate,DATE_FORMAT), c.EndDiscountFactor))
+    
