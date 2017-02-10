@@ -6,13 +6,16 @@ using System.Threading.Tasks;
 
 namespace vanilla_swap
 {
-    class ZeroCouponDataPoint
+    public class ZeroCouponDataPoint
     {
         public ZeroCouponDataPoint(DateTime valueDate, string period, double discountFactor)
         {
             ValueDate = valueDate;
             Period = period;
             DiscountFactor = discountFactor;
+            var zcDates = DateUtils.CalculateZcDates(valueDate, period);
+            StartDate = zcDates.Item1;
+            EndDate = zcDates.Item2;
         }
 
         public DateTime ValueDate { get; set; }

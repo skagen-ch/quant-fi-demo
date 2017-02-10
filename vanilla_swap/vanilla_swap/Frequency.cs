@@ -8,9 +8,9 @@ namespace vanilla_swap
 {
     public enum Frequency
     {
-        Annual,
-        SemiAnnual,
-        Quarterly,
-        Monthly
+        Annual = 12,
+        SemiAnnual = 6,
+        Quarterly = 3,
+        Monthly = 1
     }
 }
