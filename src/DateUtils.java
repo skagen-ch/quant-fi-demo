@@ -228,7 +228,7 @@ public final class DateUtils {
     {
     	ArrayList<Coupon> coupons = new ArrayList<Coupon>();
     	Period couponDates = new Period(AddMonths(maturityDate, -frequency.getValue()), maturityDate);
-        while (couponDates.getStartDate().after(settlementDate))
+        while (!(couponDates.getStartDate().before(settlementDate)))
         {
         	coupons.add(new Coupon(couponDates.getStartDate(), couponDates.getEndDate(), DaycountConvention.Actual360));
             couponDates = new Period(AddMonths(couponDates.getStartDate(), -frequency.getValue()), couponDates.getStartDate());

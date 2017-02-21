@@ -16,10 +16,10 @@ public class VanillaPricer {
 
 	public static void main(String[] args) throws java.text.ParseException, NumberFormatException, IOException {
 		Scanner input = new Scanner(System.in);
-		SimpleDateFormat dateFormat	 = new SimpleDateFormat("dd/mm/yyyy");
+		SimpleDateFormat dateFormat	 = new SimpleDateFormat("dd/MM/yyyy");
         Date valueDate = null;
         Date settle = null;
-        /*
+        
         System.out.print("Please provide valuation date (format: dd/mm/yyyy)>");
         String dateAsString = input.next();
         try
@@ -58,9 +58,9 @@ public class VanillaPricer {
         double npv = input.nextDouble();
         System.out.println();
         input.close();
-		*/
         
         // Inputs for debugging
+        /*
         try
         {
         	valueDate = dateFormat.parse("21/02/2017");
@@ -84,6 +84,7 @@ public class VanillaPricer {
         double currentFloat = 0.024;
         double spread = 0.0;
         double npv = 0.0;
+        */
         
         // Calculate maturity date
         Date maturity = DateUtils.AddPeriod(settle, tenor + "Y");
@@ -106,6 +107,7 @@ public class VanillaPricer {
         ArrayList<Coupon> floatCoupons = DateUtils.GetCouponDates(settle, maturity, frqDict.get(floatFrq));
         
         /*
+        System.out.println();
         for (Coupon cpn : floatCoupons)
         {
             System.out.println(String.format("Start: %tD, End: %tD", cpn.getStartDate(), cpn.getEndDate()));
