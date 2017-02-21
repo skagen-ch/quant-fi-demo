@@ -47,10 +47,12 @@ namespace vanilla_swap
             var fixedCoupons = DateUtils.GetCouponDates(settle, maturity, frqDict[fixFrq]).ToList();
             var floatCoupons = DateUtils.GetCouponDates(settle, maturity, frqDict[floatFrq]).ToList();
 
+            /*
             foreach (var cpn in floatCoupons)
             {
                 Console.WriteLine(string.Format("Start: {0}, End: {1}", cpn.StartDate, cpn.EndDate));
             }
+            */
 
             Console.WriteLine();
             // Read discount curve from file
