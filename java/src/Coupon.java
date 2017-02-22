@@ -2,14 +2,10 @@
 // Represents a swap cash flow
 import java.util.Date;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 
 public class Coupon extends Period {
-	private int _nbDays;
 	private DaycountConvention _dayCount;
 	private double _nbYears;
     private Double _userForwardRate;

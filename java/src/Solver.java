@@ -1,6 +1,4 @@
 import java.util.ArrayList;
-
-import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.differentiation.DerivativeStructure;
 import org.apache.commons.math3.analysis.differentiation.UnivariateDifferentiableFunction;
 import org.apache.commons.math3.analysis.solvers.NewtonRaphsonSolver;
@@ -12,7 +10,7 @@ public final class Solver {
     public static double Solve(double n, ArrayList<Coupon> c, double tnpv)
     {
 		final double target = (n * c.get(c.size()-1).getNbYears() * c.get(c.size()-1).getEndDiscountFactor()) + tnpv;
-		final double df = -c.stream().mapToDouble(x -> n * x.getNbYears() * x.getEndDiscountFactor()).sum();
+		// final double df = -c.stream().mapToDouble(x -> n * x.getNbYears() * x.getEndDiscountFactor()).sum();
 		
 		NewtonRaphsonSolver solver = new NewtonRaphsonSolver();
     	
