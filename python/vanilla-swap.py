@@ -64,7 +64,7 @@ class Coupon:
 # Calculate coupon dates
 def get_coupon_dates(settle, maturity, frequency):
     coupon_dates = maturity - relativedelta(months = frequency), maturity
-    while coupon_dates[0] > settle:
+    while coupon_dates[0] >= settle:
         yield Coupon(coupon_dates, daycount='ACT360')
         coupon_dates = coupon_dates[0] - relativedelta(months = frequency), coupon_dates[0] 
 
@@ -142,6 +142,8 @@ print('Calculated maturity: ' + datetime.strftime(maturity, DATE_FORMAT))
 # Calculate coupon dates
 fixed_coupons = list(get_coupon_dates(settle, maturity, frequency_dict[frequency[0]]))[::-1]
 float_coupons = list(get_coupon_dates(settle, maturity, frequency_dict[frequency[1]]))[::-1]
+#for c in float_coupons:
+#    print('Date: {!s}'.format(datetime.strftime(c.EndDate,DATE_FORMAT)))
 
 print('')
 # Generate discount curve
