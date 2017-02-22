@@ -116,7 +116,7 @@ public final class DateUtils {
         dayOfWeek = cldr.get(Calendar.DAY_OF_WEEK);
         if (dayOfWeek == 0 || dayOfWeek == 6)
         {
-        	AddDays(endDate, dayOfWeek / 6 + 1);
+        	endDate = AddDays(endDate, dayOfWeek / 6 + 1);
         }
 
         return endDate;
@@ -145,11 +145,11 @@ public final class DateUtils {
 
         // Loop through months
         int totalNumberOfDays = 0;
-        while (!startDate.after(endDate))
+        while (startDate.before(endDate))
         {
-            Date monthStartDate = AddDays(startDate, -(GetDay(startDate) - 1));
+            Date monthStartDate = AddDays(startDate, -(GetDay(startDate)-1));
             Date monthEndDate = endDate;
-            if (startDate != monthStartDate)    // if start date is not first day of month
+            if (startDate.getTime() != monthStartDate.getTime())    // if start date is not first day of month
             {
                 monthEndDate = AddMonths(monthStartDate, 1);
             }

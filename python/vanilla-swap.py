@@ -76,7 +76,7 @@ def add_period(start_date, period):
     
     # Start date adjustment
     if start_date.weekday() > 4:
-        start_date += timedelta(days = 7 - start_date.weekday())
+        start_date += timedelta(days = 6 - start_date.weekday())
     
     end_date = start_date #initialise
     if unit == 'D':
@@ -90,7 +90,7 @@ def add_period(start_date, period):
 
     # End date adjustment
     if end_date.weekday() > 4:
-        end_date += timedelta(days = 7 - start_date.weekday())
+        end_date += timedelta(days = 6 - start_date.weekday())
     
     return end_date
 

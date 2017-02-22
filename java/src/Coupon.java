@@ -2,7 +2,10 @@
 // Represents a swap cash flow
 import java.util.Date;
 import java.util.ArrayList;
+
+import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
+import org.apache.commons.math3.analysis.interpolation.UnivariateInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 
 public class Coupon extends Period {
@@ -42,7 +45,7 @@ public class Coupon extends Period {
 
     public double getNbYears()
     {
-    	_nbYears = DateUtils.YearFrac(this.getStartDate(), this.getEndDate());
+    	_nbYears = DateUtils.YearFrac(this.getStartDate(), this.getEndDate(), this.getDayCount());
     	return _nbYears;
 	}
 
@@ -89,10 +92,10 @@ public class Coupon extends Period {
 
     public void CalculateDiscountFactor(ArrayList<ZeroCouponDataPoint> discountCurve)
     {
-    	SplineInterpolator interp = new SplineInterpolator();
+    	UnivariateInterpolator interp = new SplineInterpolator();
     	double[] xArray = discountCurve.stream().mapToDouble(x -> x.getEndDate().getTime()).toArray();
 		double[] yArray = discountCurve.stream().mapToDouble(y -> y.getDiscountFactor()).toArray();
-		PolynomialSplineFunction cs = interp.interpolate(xArray, yArray);
+		UnivariateFunction cs = interp.interpolate(xArray, yArray);
         setStartDiscountFactor(cs.value(getStartDate().getTime()));
         setEndDiscountFactor(cs.value(getEndDate().getTime()));
     }

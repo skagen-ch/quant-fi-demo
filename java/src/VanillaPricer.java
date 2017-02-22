@@ -11,12 +11,15 @@ import java.util.Hashtable;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.TimeZone;
 
 public class VanillaPricer {
 
 	public static void main(String[] args) throws java.text.ParseException, NumberFormatException, IOException {
 		Scanner input = new Scanner(System.in);
+		TimeZone tz	= TimeZone.getTimeZone("UTC");
 		SimpleDateFormat dateFormat	 = new SimpleDateFormat("dd/MM/yyyy");
+		dateFormat.setTimeZone(tz);
         Date valueDate = null;
         Date settle = null;
         
@@ -63,7 +66,7 @@ public class VanillaPricer {
         /*
         try
         {
-        	valueDate = dateFormat.parse("21/02/2017");
+        	valueDate = dateFormat.parse("22/02/2017");
         }
         catch (ParseException e)
         {
@@ -71,7 +74,7 @@ public class VanillaPricer {
         }
         try
         {
-        	settle = dateFormat.parse("23/02/2017");
+        	settle = dateFormat.parse("24/02/2017");
         }
         catch (ParseException e)
         {
