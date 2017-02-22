@@ -9,7 +9,7 @@ public final class Solver {
 	
     public static double Solve(double n, ArrayList<Coupon> c, double tnpv)
     {
-		final double target = (n * c.get(c.size()-1).getNbYears() * c.get(c.size()-1).getEndDiscountFactor()) + tnpv;
+		final double target = tnpv - (n * c.get(c.size()-1).getNbYears() * c.get(c.size()-1).getEndDiscountFactor());
 		// final double df = -c.stream().mapToDouble(x -> n * x.getNbYears() * x.getEndDiscountFactor()).sum();
 		
 		NewtonRaphsonSolver solver = new NewtonRaphsonSolver();
