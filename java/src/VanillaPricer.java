@@ -105,7 +105,8 @@ public class VanillaPricer {
         }};
         ArrayList<Coupon> fixedCoupons = DateUtils.GetCouponDates(settle, maturity, frqDict.get(fixFrq));
         ArrayList<Coupon> floatCoupons = DateUtils.GetCouponDates(settle, maturity, frqDict.get(floatFrq));
-        
+        fixedCoupons.sort((x, y) -> x.getEndDate().compareTo(y.getEndDate()));
+        floatCoupons.sort((x, y) -> x.getEndDate().compareTo(y.getEndDate()));
         /*
         System.out.println();
         for (Coupon cpn : floatCoupons)
