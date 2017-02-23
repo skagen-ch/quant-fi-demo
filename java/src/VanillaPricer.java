@@ -14,17 +14,18 @@ import java.util.Set;
 import java.util.TimeZone;
 
 public class VanillaPricer {
-
-	public static void main(String[] args) throws java.text.ParseException, NumberFormatException, IOException {
-		Scanner input = new Scanner(System.in);
+	private Double _calculatedFixedRate;
+	private ArrayList<Coupon> _fixedCoupons;
+	private ArrayList<Coupon> _floatCoupons;
+	
+	public void main(String[] args) throws java.text.ParseException, NumberFormatException, IOException {
 		TimeZone tz	= TimeZone.getTimeZone("UTC");
 		SimpleDateFormat dateFormat	 = new SimpleDateFormat("dd/MM/yyyy");
 		dateFormat.setTimeZone(tz);
         Date valueDate = null;
         Date settle = null;
         
-        System.out.print("Please provide valuation date (format: dd/mm/yyyy)>");
-        String dateAsString = input.next();
+        String dateAsString = args[0];
         try
         {
         	valueDate = dateFormat.parse(dateAsString);
@@ -34,8 +35,7 @@ public class VanillaPricer {
         	e.printStackTrace();
         }
         
-        System.out.print("Please provide settlement date (format: dd/mm/yyyy)>");
-        dateAsString = input.next();
+        dateAsString = args[1];
         try
         {
         	settle = dateFormat.parse(dateAsString);
@@ -45,22 +45,13 @@ public class VanillaPricer {
         	e.printStackTrace();
         }
 
-        System.out.print("Please provide fixed leg coupon frequency (A/S/Q/M)>");
-        String fixFrq = input.next();
-        System.out.print("Please provide float leg coupon frequency (A/S/Q/M)>");
-        String floatFrq = input.next();
-        System.out.print("Please provide the notional value>");
-        double notional = input.nextDouble();
-        System.out.print("Please provide swap tenor in number of years>");
-        String tenor = input.next();
-        System.out.print("Please provide the current index value>");
-        double currentFloat = input.nextDouble();
-        System.out.print("Please provide the bp spread over the index rate>");
-        double spread = input.nextDouble()/10000;
-        System.out.print("Please provide the swap NPV>");
-        double npv = input.nextDouble();
-        System.out.println();
-        input.close();
+        String fixFrq = args[2];
+        String floatFrq = args[3];
+        double notional = Double.parseDouble(args[4]);
+        String tenor = args[5];
+        double currentFloat = Double.parseDouble(args[6]);
+        double spread = Double.parseDouble(args[7])/10000.0;
+        double npv = Double.parseDouble(args[8]);
         
         // Inputs for debugging
         /*
@@ -184,6 +175,37 @@ public class VanillaPricer {
 
         System.out.println();
         System.out.println(String.format("Calculated fixed rate: %.6f", fixedRate));
+        setCalculatedFixedRate(fixedRate);
+	}
+	
+	public void setCalculatedFixedRate(double rate)
+	{
+		_calculatedFixedRate = rate;
+	}
+	
+	public String getCalculatedFixedRate()
+	{
+		return String.format("%.4f", _calculatedFixedRate * 100);
+	}
+	
+	public void setFixedCoupons(ArrayList<Coupon> coupons)
+	{
+		_fixedCoupons = coupons;
+	}
+	
+	public ArrayList<Coupon> getFixedCoupons()
+	{
+		return _fixedCoupons;
+	}
+	
+	public void setFloatCoupons(ArrayList<Coupon> coupons)
+	{
+		_floatCoupons = coupons;
+	}
+	
+	public ArrayList<Coupon> getFloatCoupons()
+	{
+		return _floatCoupons;
 	}
 
 }

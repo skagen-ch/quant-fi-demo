@@ -85,7 +85,7 @@ public final class DateUtils {
         cldr.setTime(startDate);
         int dayOfWeek = cldr.get(Calendar.DAY_OF_WEEK);
         
-        if (dayOfWeek == 0 || dayOfWeek == 6)
+        if (dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY)
         {
             /* Sunday = 0, Saturday = 6
              * If Sunday (0), add 1 day
@@ -114,7 +114,7 @@ public final class DateUtils {
         // End date adjustment
         cldr.setTime(endDate);
         dayOfWeek = cldr.get(Calendar.DAY_OF_WEEK);
-        if (dayOfWeek == 0 || dayOfWeek == 6)
+        if (dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY)
         {
         	endDate = AddDays(endDate, dayOfWeek / 6 + 1);
         }
