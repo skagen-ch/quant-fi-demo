@@ -111,8 +111,8 @@ public class VanillaPricer {
         */
 
         // Read discount curve from file
-        URL url = VanillaPricer.class.getResource("marketdata.txt");
-        FileReader f = new FileReader(url.getPath());
+        //URL url = VanillaPricer.class.getResource(args[9]);
+        FileReader f = new FileReader(args[9]);
         BufferedReader reader = new BufferedReader(f);
         Hashtable<String, Double> discountCurve = new Hashtable<String, Double>();
         String line = "";

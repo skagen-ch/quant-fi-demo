@@ -2,6 +2,7 @@
 
 import java.awt.EventQueue;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
 
 
@@ -22,11 +23,11 @@ public class mainFrame extends JFrame {
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
+				mainFrame frame = new mainFrame();
 				try {
-					mainFrame frame = new mainFrame();
 					frame.setVisible(true);
 				} catch (Exception e) {
-					e.printStackTrace();
+					JOptionPane.showMessageDialog(frame, e.getStackTrace());
 				}
 			}
 		});

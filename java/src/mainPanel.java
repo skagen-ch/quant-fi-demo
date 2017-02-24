@@ -5,6 +5,8 @@ import javax.swing.JTable;
 
 import java.awt.Color;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+
 import java.awt.Component;
 import javax.swing.JTextField;
 import java.awt.GridBagLayout;
@@ -20,6 +22,7 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.awt.event.ActionEvent;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 
 public class mainPanel extends JPanel {
 	private JTextField txtValuationDate;
@@ -285,6 +288,14 @@ public class mainPanel extends JPanel {
 		btnCalculate.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent args) {
 				try {
+					String marketDataPath = "marketdata.txt";
+					JFileChooser fileChooser = new JFileChooser();
+					int returnVal = fileChooser.showOpenDialog(btnCalculate);
+					if (returnVal == JFileChooser.APPROVE_OPTION)
+					{
+						marketDataPath =  fileChooser.getSelectedFile().getAbsolutePath();
+					}
+					
 					vanillaPricer.main(new String[]{
 			        	txtValuationDate.getText(),
 					    txtSettlementDate.getText(),
@@ -294,20 +305,21 @@ public class mainPanel extends JPanel {
 				        txtTenor.getText(),
 					    txtCurFloat.getText(),
 				        txtSpread.getText(),
-			        	txtNpv.getText()}
+			        	txtNpv.getText(),
+			        	marketDataPath}
 					);
 					zcCurvePanel.setTblZcCurve(vanillaPricer.getZcCurve());
 					txtCalculatedFixedRate.setText(vanillaPricer.getCalculatedFixedRate());
 					cashFlowsPanel.setTblFixedCashFlows(vanillaPricer.getFixedCoupons());
 					cashFlowsPanel.setTblFloatCashFlows(vanillaPricer.getFloatCoupons());
 				} catch (NumberFormatException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					JOptionPane.showMessageDialog(btnCalculate, e.getStackTrace());
 				} catch (ParseException e) {
-					// TODO Auto-generated catch block
+					JOptionPane.showMessageDialog(btnCalculate, e.getStackTrace());
 					e.printStackTrace();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
+					JOptionPane.showMessageDialog(btnCalculate, e.getStackTrace());
 					e.printStackTrace();
 				}
 			}

@@ -7,13 +7,4 @@
 /VanillaPricer$1.class
 /VanillaPricer.class
 /ZeroCouponDataPoint.class
-/java/
-/vanillaPricerGui/
-/mainFrame$1.class
-/mainFrame.class
-/mainPanel$1.class
-/mainPanel.class
-/cashFlowsPanel.class
-/cashFlowsPanel$1.class
-/cashFlowsPanel$2.class
-/zcCurvePanel.class
+/commons-math3-3.6.1.jar
