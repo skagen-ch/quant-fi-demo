@@ -1,6 +1,8 @@
 
 
 import javax.swing.JPanel;
+import javax.swing.JTable;
+
 import java.awt.Color;
 import javax.swing.JLabel;
 import java.awt.Component;
@@ -228,6 +230,7 @@ public class mainPanel extends JPanel {
 		gbc_txtCurFloat.gridy = 8;
 		add(txtCurFloat, gbc_txtCurFloat);
 		txtCurFloat.setColumns(10);
+		txtCurFloat.setText("0.024");
 		
 		lblSpread.setForeground(Color.ORANGE);
 		GridBagConstraints gbc_lblSpread = new GridBagConstraints();
@@ -285,15 +288,18 @@ public class mainPanel extends JPanel {
 					vanillaPricer.main(new String[]{
 			        	txtValuationDate.getText(),
 					    txtSettlementDate.getText(),
-					    "A",
-				        "S",
+					    cboFixedFrq.getSelectedItem().toString().substring(0, 1),
+					    cboFloatFrq.getSelectedItem().toString().substring(0, 1),
 				        txtNotional.getText(),
 				        txtTenor.getText(),
-					    "0.024",
+					    txtCurFloat.getText(),
 				        txtSpread.getText(),
 			        	txtNpv.getText()}
 					);
+					zcCurvePanel.setTblZcCurve(vanillaPricer.getZcCurve());
 					txtCalculatedFixedRate.setText(vanillaPricer.getCalculatedFixedRate());
+					cashFlowsPanel.setTblFixedCashFlows(vanillaPricer.getFixedCoupons());
+					cashFlowsPanel.setTblFloatCashFlows(vanillaPricer.getFloatCoupons());
 				} catch (NumberFormatException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -312,4 +318,8 @@ public class mainPanel extends JPanel {
 		gbc_btnCalculate.gridy = 11;
 		add(btnCalculate, gbc_btnCalculate);}
 
+	public double getSomeValue()
+	{
+		return 1.2345;
+	}
 }

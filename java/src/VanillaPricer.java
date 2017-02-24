@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.TimeZone;
 
 public class VanillaPricer {
+	private ArrayList<ZeroCouponDataPoint> _zcCurve;
 	private Double _calculatedFixedRate;
 	private ArrayList<Coupon> _fixedCoupons;
 	private ArrayList<Coupon> _floatCoupons;
@@ -109,9 +110,7 @@ public class VanillaPricer {
         }
         */
 
-        System.out.println();
         // Read discount curve from file
-        System.out.println("Discount curve (from file)");
         URL url = VanillaPricer.class.getResource("marketdata.txt");
         FileReader f = new FileReader(url.getPath());
         BufferedReader reader = new BufferedReader(f);
@@ -131,14 +130,15 @@ public class VanillaPricer {
         	zcCurve.add(new ZeroCouponDataPoint(valueDate, p, discountCurve.get(p)));
         }
         zcCurve.sort((x, y) -> x.getEndDate().compareTo(y.getEndDate()));
+        setZcCurve(zcCurve);
+        /*
         for (ZeroCouponDataPoint p : zcCurve)
         {
             System.out.println(String.format("Period: %s, Date: %tD, DF: %.6f", p.getPeriod(), p.getEndDate(), p.getDiscountFactor()));
         }
+        */
 
-        System.out.println();
         // Calculate coupon rates
-        System.out.println("Calculate floating cash flows");
         floatCoupons.forEach(x -> x.CalculateDiscountFactor(zcCurve));
         // Set current float
         if (currentFloat > 0)
@@ -148,34 +148,46 @@ public class VanillaPricer {
         floatCoupons.forEach(x -> x.CalculateCashFlow(notional, spread));
         // Re-calculate final cash flow (with redemption)
         floatCoupons.get(floatCoupons.size() - 1).CalculateCashFlow(notional, spread, true);
+        setFloatCoupons(floatCoupons);
+        /*
         for (Coupon c : floatCoupons)
         {
             System.out.println(String.format("Date: %tD, Rate: %.6f, Cash flow: %.2f", c.getEndDate(), c.getForwardRate(), c.getCashFlow()));
         }
+        */
 
-        System.out.println();
         // Calculate float leg NPV
         double floatLegNpv = floatCoupons.stream().mapToDouble(x -> x.getCashFlow() * x.getEndDiscountFactor()).sum();
         double targetLegNpv = floatLegNpv - npv;
         System.out.println(String.format("Float leg NPV = %1$.2f, Target leg NPV = %2$.2f", floatLegNpv, targetLegNpv));
 
-        System.out.println();
         // Solve for coupon rate
-        System.out.println("Calculate fixed cash flows");
         fixedCoupons.forEach(x -> x.CalculateDiscountFactor(zcCurve));
         double fixedRate = Solver.Solve(notional, fixedCoupons, targetLegNpv);
         fixedCoupons.forEach(x -> x.setForwardRate(fixedRate));
         fixedCoupons.forEach(x -> x.CalculateCashFlow(notional));
         // Re-calculate final cash flow (with redemption)
         fixedCoupons.get(fixedCoupons.size() - 1).CalculateCashFlow(notional, 0, true);
+        setFixedCoupons(fixedCoupons);
+        /*
         for (Coupon c : fixedCoupons)
         {
         	System.out.println(String.format("Date: %tD, Rate: %.6f, Cash flow: %.2f", c.getEndDate(), c.getForwardRate(), c.getCashFlow()));
         }
+        */
 
-        System.out.println();
-        System.out.println(String.format("Calculated fixed rate: %.6f", fixedRate));
+        //System.out.println(String.format("Calculated fixed rate: %.6f", fixedRate));
         setCalculatedFixedRate(fixedRate);
+	}
+	
+	public void setZcCurve(ArrayList<ZeroCouponDataPoint> curve)
+	{
+		_zcCurve = curve;
+	}
+	
+	public ArrayList<ZeroCouponDataPoint> getZcCurve()
+	{
+		return _zcCurve;
 	}
 	
 	public void setCalculatedFixedRate(double rate)
