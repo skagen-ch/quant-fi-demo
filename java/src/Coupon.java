@@ -79,6 +79,11 @@ public class Coupon extends Period {
     	if (!(_userForwardRate == null)) return _userForwardRate.doubleValue();
         return (getStartDiscountFactor() == 0 || getNbYears() == 0) ? 0 : ((1 / (getEndDiscountFactor() / getStartDiscountFactor())) - 1) / getNbYears();
     }
+    
+    public double getForwardDiscountFactor()
+    {
+        return (getStartDiscountFactor() == 0) ? 0 : (getEndDiscountFactor() / getStartDiscountFactor());
+    }
 
     public void setCashFlow(double cf)
     {

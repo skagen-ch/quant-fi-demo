@@ -52,7 +52,7 @@ public class mainFrame extends JFrame {
 		tabPane.add("Discount Curve (from file)", zcPanel);
 		setContentPane(tabPane);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 600, 600);
+		setBounds(0, 0, 550, 550);
 	}
 
 }

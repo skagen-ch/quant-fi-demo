@@ -15,7 +15,10 @@ import java.util.TimeZone;
 
 public class VanillaPricer {
 	private ArrayList<ZeroCouponDataPoint> _zcCurve;
+	private String _maturityDate;
 	private Double _calculatedFixedRate;
+	private Double _fixedLegNpv;
+	private Double _floatLegNpv;
 	private ArrayList<Coupon> _fixedCoupons;
 	private ArrayList<Coupon> _floatCoupons;
 	
@@ -26,6 +29,7 @@ public class VanillaPricer {
         Date valueDate = null;
         Date settle = null;
         
+        // Get inputs
         String dateAsString = args[0];
         try
         {
@@ -83,7 +87,7 @@ public class VanillaPricer {
         
         // Calculate maturity date
         Date maturity = DateUtils.AddPeriod(settle, tenor + "Y");
-        System.out.println("Calculated maturity: " + dateFormat.format(maturity));
+        setMaturityDate(dateFormat.format(maturity));
 
         // Calculate coupon dates
         Hashtable<String, Frequency> frqDict = new Hashtable<String, Frequency>()
@@ -158,16 +162,19 @@ public class VanillaPricer {
 
         // Calculate float leg NPV
         double floatLegNpv = floatCoupons.stream().mapToDouble(x -> x.getCashFlow() * x.getEndDiscountFactor()).sum();
+        setFloatLegNpv(floatLegNpv);
         double targetLegNpv = floatLegNpv - npv;
-        System.out.println(String.format("Float leg NPV = %1$.2f, Target leg NPV = %2$.2f", floatLegNpv, targetLegNpv));
+        //System.out.println(String.format("Float leg NPV = %1$.2f, Target leg NPV = %2$.2f", floatLegNpv, targetLegNpv));
 
         // Solve for coupon rate
         fixedCoupons.forEach(x -> x.CalculateDiscountFactor(zcCurve));
-        double fixedRate = Solver.Solve(notional, fixedCoupons, targetLegNpv);
+        double fixedRate = Solver.Solve(notional, fixedCoupons, floatCoupons, targetLegNpv);
         fixedCoupons.forEach(x -> x.setForwardRate(fixedRate));
         fixedCoupons.forEach(x -> x.CalculateCashFlow(notional));
         // Re-calculate final cash flow (with redemption)
         fixedCoupons.get(fixedCoupons.size() - 1).CalculateCashFlow(notional, 0, true);
+        double fixedLegNpv = fixedCoupons.stream().mapToDouble(x -> x.getCashFlow() * x.getEndDiscountFactor()).sum();
+        setFixedLegNpv(fixedLegNpv);
         setFixedCoupons(fixedCoupons);
         /*
         for (Coupon c : fixedCoupons)
@@ -190,6 +197,16 @@ public class VanillaPricer {
 		return _zcCurve;
 	}
 	
+	public void setMaturityDate(String matdate)
+	{
+		_maturityDate = matdate;
+	}
+	
+	public String getMaturityDate()
+	{
+		return _maturityDate;
+	}
+	
 	public void setCalculatedFixedRate(double rate)
 	{
 		_calculatedFixedRate = rate;
@@ -198,6 +215,26 @@ public class VanillaPricer {
 	public String getCalculatedFixedRate()
 	{
 		return String.format("%.4f", _calculatedFixedRate * 100);
+	}
+	
+	public void setFixedLegNpv(double npv)
+	{
+		_fixedLegNpv = npv;
+	}
+	
+	public String getFloatLegNpv()
+	{
+		return String.format("%.2f", _floatLegNpv);
+	}
+	
+	public void setFloatLegNpv(double npv)
+	{
+		_floatLegNpv = npv;
+	}
+	
+	public String getFixedLegNpv()
+	{
+		return String.format("%.2f", _fixedLegNpv);
 	}
 	
 	public void setFixedCoupons(ArrayList<Coupon> coupons)
