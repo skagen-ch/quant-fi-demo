@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using mn = MathNet.Numerics;
 
-namespace vanilla_swap
+namespace VanillaSwap
 {
     public static class Solver
     {

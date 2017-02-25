@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using mn = MathNet.Numerics.Interpolation;
 
-namespace vanilla_swap
+namespace VanillaSwap
 {
     public class Coupon
     {
