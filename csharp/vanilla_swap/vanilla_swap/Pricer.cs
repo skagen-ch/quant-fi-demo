@@ -13,33 +13,23 @@ namespace VanillaSwap
         public void Calculate(string[] args)
         {
             //Console.Write("Please provide valuation date (format: dd/mm/yyyy)>");
-            //var valueDate = DateTime.Parse(Console.ReadLine());
             var valueDate = DateTime.Parse(args[0]);
             //Console.Write("Please provide settlement date (format: dd/mm/yyyy)>");
-            //var settle = DateTime.Parse(Console.ReadLine());
             var settle = DateTime.Parse(args[1]);
             //Console.Write("Please provide fixed leg coupon frequency (A/S/Q/M)>");
-            //var fixFrq = Console.ReadLine();
             var fixFrq = args[2];
             //Console.Write("Please provide float leg coupon frequency (A/S/Q/M)>");
-            //var floatFrq = Console.ReadLine();
             var floatFrq = args[3];
             //Console.Write("Please provide the notional value>");
-            //var notional = double.Parse(Console.ReadLine());
             var notional = double.Parse(args[4]);
             //Console.Write("Please provide swap tenor in number of years>");
-            //var tenor = int.Parse(Console.ReadLine());
             var tenor = int.Parse(args[5]);
             //Console.Write("Please provide the current index value>");
-            //var currentFloat = double.Parse(Console.ReadLine());
             var currentFloat = double.Parse(args[6]);
             //Console.Write("Please provide the bp spread over the index rate>");
-            //var spread = double.Parse(Console.ReadLine()) / 10000;
             var spread = double.Parse(args[7]) / 10000;
             //Console.Write("Please provide the swap NPV>");
-            //var npv = double.Parse(Console.ReadLine());
             var npv = double.Parse(args[8]);
-            //Console.WriteLine();
 
             // Calculate maturity date
             var maturity = DateUtils.AddPeriod(settle, tenor.ToString() + "Y");
@@ -69,6 +59,7 @@ namespace VanillaSwap
             Dictionary<string, double> discountCurve = ns.JsonConvert.DeserializeObject<Dictionary<string, double>>(File.ReadAllText(args[9]));
             var zcCurve = discountCurve.Select(kv => new ZeroCouponDataPoint(valueDate, kv.Key, kv.Value)).ToList();
             zcCurve.Sort(new Comparison<ZeroCouponDataPoint>((x, y) => DateTime.Compare(x.EndDate, y.EndDate)));
+            ZcCurve = zcCurve;
             /*
             foreach (var p in zcCurve)
             {
@@ -87,6 +78,7 @@ namespace VanillaSwap
             floatCoupons.ForEach(x => x.CalculateCashFlow(notional, spread));
             // Re-calculate final cash flow (with redemption)
             floatCoupons.Last().CalculateCashFlow(notional, spread, true);
+            FloatLegCashFlows = floatCoupons;
             /*
             foreach (var c in floatCoupons)
             {
@@ -109,6 +101,7 @@ namespace VanillaSwap
             fixedCoupons.ForEach(x => x.CalculateCashFlow(notional));
             // Re-calculate final cash flow (with redemption)
             fixedCoupons.Last().CalculateCashFlow(notional, 0, true);
+            FixedLegCashFlows = fixedCoupons;
             /*
             foreach (var c in fixedCoupons)
             {
@@ -125,10 +118,16 @@ namespace VanillaSwap
 
         public string MaturityDate { get; set; }
 
+        public List<Coupon> FixedLegCashFlows { get; set; }
+
+        public List<Coupon> FloatLegCashFlows { get; set; }
+
         public double FixedLegNpv { get; set; }
 
         public double FloatLegNpv { get; set; }
 
         public double CalculatedFixedRate { get; set; }
+
+        public List<ZeroCouponDataPoint> ZcCurve { get; set; }
     }
 }

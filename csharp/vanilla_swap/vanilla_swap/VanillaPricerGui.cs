@@ -59,6 +59,24 @@ namespace VanillaSwap
             txtFloatLegNpv.Text = pricer.FloatLegNpv.ToString("N2", CultureInfo.InvariantCulture);
             txtFixedRate.Text = pricer.CalculatedFixedRate.ToString("F4", CultureInfo.InvariantCulture);
             txtFixLegNpv.Text = pricer.FixedLegNpv.ToString("N2", CultureInfo.InvariantCulture);
+            lvFixedCashFlows.Items.AddRange(
+                pricer.FixedLegCashFlows.Select(x => new ListViewItem(
+                    new[] {
+                        x.EndDate.ToLongDateString(),
+                        x.ForwardRate.ToString("F4", CultureInfo.InvariantCulture),
+                        x.CashFlow.ToString("N2", CultureInfo.InvariantCulture)})).ToArray<ListViewItem>());
+            lvFloatingCashFlows.Items.AddRange(
+                pricer.FloatLegCashFlows.Select(x => new ListViewItem(
+                    new[] {
+                        x.EndDate.ToLongDateString(),
+                        x.ForwardRate.ToString("F4", CultureInfo.InvariantCulture),
+                        x.CashFlow.ToString("N2", CultureInfo.InvariantCulture)})).ToArray<ListViewItem>());
+            lvZcCurve.Items.AddRange(
+                pricer.ZcCurve.Select(x => new ListViewItem(
+                    new[] {
+                        x.Period,
+                        x.EndDate.ToLongDateString(),
+                        x.DiscountFactor.ToString("F4", CultureInfo.InvariantCulture)})).ToArray<ListViewItem>());
         }
     }
 }

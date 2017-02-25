@@ -94,7 +94,7 @@ namespace VanillaSwap
         public static IEnumerable<Coupon> GetCouponDates(DateTime settlementDate, DateTime maturityDate, Frequency frequency)
         {
             var couponDates = new Tuple<DateTime, DateTime>(maturityDate.AddMonths(-(int)frequency), maturityDate);
-            while (couponDates.Item1 > settlementDate)
+            while (couponDates.Item1 >= settlementDate)
             {
                 yield return new Coupon(couponDates.Item1, couponDates.Item2, DayCountBasis.Actual360);
                 couponDates = new Tuple<DateTime, DateTime>(couponDates.Item1.AddMonths(-(int)frequency), couponDates.Item1);
