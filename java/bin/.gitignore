@@ -25,3 +25,7 @@
 /mainPanel$7.class
 /mainPanel$8.class
 /mainPanel$9.class
+/MarketDataReaderSingleton.class
+/CouponList.class
+/FloatingCouponList.class
+/FixedCouponList.class

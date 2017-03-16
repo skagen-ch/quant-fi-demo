@@ -4,11 +4,9 @@ import javax.swing.JTable;
 import javax.swing.BoxLayout;
 import java.awt.Color;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableModel;
-
 import java.awt.Component;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.TimeZone;
 
 import javax.swing.Box;
@@ -19,7 +17,7 @@ public class cashFlowsPanel extends JPanel {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = -6658120697533772719L;
+	private static final long serialVersionUID = 1L;
 	private static JTable tblFixedCashFlows;
 	private static JTable tblFloatCashFlows;
 	private JPanel pFloat;
@@ -34,7 +32,6 @@ public class cashFlowsPanel extends JPanel {
 		setupCfPanel();
 	}
 	
-	@SuppressWarnings("serial")
 	private void setupCfPanel()
 	{
 		
@@ -67,7 +64,7 @@ public class cashFlowsPanel extends JPanel {
 		pFloat.add(spFloat);
 	}
 	
-	public static void setTblFixedCashFlows(ArrayList<Coupon> cfs)
+	public static void setTblFixedCashFlows(Iterator<Coupon> coupons)
 	{
 		TimeZone tz	= TimeZone.getTimeZone("UTC");
 		SimpleDateFormat dateFormat	 = new SimpleDateFormat("dd/MM/yyyy");
@@ -77,8 +74,8 @@ public class cashFlowsPanel extends JPanel {
 		dataModel.addColumn("Date");
 		dataModel.addColumn("Rate");
 		dataModel.addColumn("Cash flow");
-		for (Coupon cf : cfs)
-		{
+		while (coupons.hasNext()) {
+			Coupon cf = coupons.next();
 			String[] s = {dateFormat.format(cf.getEndDate()),String.format("%.3f", cf.getForwardRate()*100),String.format("%.2f", cf.getCashFlow())};
 			dataModel.addRow(s);
 		}
@@ -88,7 +85,7 @@ public class cashFlowsPanel extends JPanel {
 		return tblFixedCashFlows;
 	}
 	
-	public static void setTblFloatCashFlows(ArrayList<Coupon> cfs)
+	public static void setTblFloatCashFlows(Iterator<Coupon> coupons)
 	{
 		TimeZone tz	= TimeZone.getTimeZone("UTC");
 		SimpleDateFormat dateFormat	 = new SimpleDateFormat("dd/MM/yyyy");
@@ -98,8 +95,8 @@ public class cashFlowsPanel extends JPanel {
 		dataModel.addColumn("Date");
 		dataModel.addColumn("Rate");
 		dataModel.addColumn("Cash flow");
-		for (Coupon cf : cfs)
-		{
+		while (coupons.hasNext()) {
+			Coupon cf = coupons.next();
 			String[] s = {dateFormat.format(cf.getEndDate()),String.format("%.3f", cf.getForwardRate()*100),String.format("%.2f", cf.getCashFlow())};
 			dataModel.addRow(s);
 		}

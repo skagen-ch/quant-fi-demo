@@ -2,6 +2,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 
 public interface Pricer {
 	public void calculate(String marketDataPath) throws FileNotFoundException, NumberFormatException, IOException;
@@ -62,13 +63,13 @@ public interface Pricer {
 	
 	public String getFixedLegNpv();
 	
-	public void setFixedCoupons(ArrayList<Coupon> coupons);
+	public void setFixedCoupons(Iterator<Coupon> coupons);
 	
-	public ArrayList<Coupon> getFixedCoupons();
+	public Iterator<Coupon> getFixedCoupons();
 	
-	public void setFloatCoupons(ArrayList<Coupon> coupons);
+	public void setFloatCoupons(Iterator<Coupon> coupons);
 	
-	public ArrayList<Coupon> getFloatCoupons();
+	public Iterator<Coupon> getFloatCoupons();
 	
 	public void registerObserver(PricerObserver o);
 	

@@ -1,25 +1,27 @@
-import java.util.ArrayList;
-import org.apache.commons.math3.analysis.differentiation.DerivativeStructure;
-import org.apache.commons.math3.analysis.differentiation.UnivariateDifferentiableFunction;
-import org.apache.commons.math3.analysis.solvers.NewtonRaphsonSolver;
-import org.apache.commons.math3.exception.DimensionMismatchException;
+import java.util.Iterator;
 
 public final class ClosedSolver implements Solver {
 	
-    public double Solve(double notional, ArrayList<Coupon> fixedCoupons, ArrayList<Coupon> floatingCoupons, double targetNpv)
+    public double Solve(double notional, Iterator<Coupon> fixedCoupons, Iterator<Coupon> floatingCoupons, double targetNpv)
     {
     	double initialGuess = 0.05;
     	
-    	final double discountFactorAtMaturity = fixedCoupons.get(fixedCoupons.size()-1).getEndDiscountFactor();
-    	final double discountedNotional = notional * discountFactorAtMaturity;
+    	double discountFactorAtMaturity;
+    	double discountedNotional = 0;
     	
     	double legNpv = 0.0;
-		double derivativeValue = 0.0; 
-		for (Coupon c : fixedCoupons)
-		{
+		double derivativeValue = 0.0;
+		while (fixedCoupons.hasNext()) {
+			Coupon c = fixedCoupons.next();
 			legNpv += initialGuess * notional * c.getNbYears() * c.getEndDiscountFactor();
 			derivativeValue += notional * c.getNbYears() * c.getEndDiscountFactor();
+			
+			if (!fixedCoupons.hasNext()) {
+				discountFactorAtMaturity = c.getEndDiscountFactor();
+				discountedNotional = notional * discountFactorAtMaturity;
+			}
 		}
+		
 		legNpv += discountedNotional;
 
 		double delta = legNpv - targetNpv;

@@ -1,5 +1,5 @@
-import java.util.ArrayList;
+import java.util.Iterator;
 
 public interface Solver {
-	public double Solve(double notional, ArrayList<Coupon> fixedCoupons, ArrayList<Coupon> floatingCoupons, double targetNpv);
+	public double Solve(double notional, Iterator<Coupon> fixedCoupons, Iterator<Coupon> floatingCoupons, double targetNpv);
 }

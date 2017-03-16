@@ -1,12 +1,10 @@
 // VanillaPricer.java
-// Program that prices a simple vanilla swap
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.TimeZone;
@@ -27,8 +25,8 @@ public class VanillaPricer implements Pricer {
 	private Double _calculatedFixedRate;
 	private Double _fixedLegNpv;
 	private Double _floatLegNpv;
-	private ArrayList<Coupon> _fixedCoupons;
-	private ArrayList<Coupon> _floatCoupons;
+	private Iterator<Coupon> _fixedCoupons;
+	private Iterator<Coupon> _floatCoupons;
 	private Solver solver;
 	TimeZone tz	= TimeZone.getTimeZone("UTC");
 	SimpleDateFormat dateFormat	 = new SimpleDateFormat("dd/MM/yyyy");
@@ -52,15 +50,10 @@ public class VanillaPricer implements Pricer {
 	}
 	
 	public void calculate(String marketDataPath) throws NumberFormatException, IOException {
-        Date valueDate = null;
-        Date settle = null;
-        
-    	valueDate = getValuationDate();
-        settle = getSettlementDate();
-
+    	Date valueDate = getValuationDate();
+        Date settle = getSettlementDate();
         Frequency fixFrq = getFixedFrequency();
         Frequency floatFrq = getFloatFrequency();
-        
         double notional = getNotional();
         String tenor = getTenor();
         double currentFloat = getCurrentFloat();
@@ -98,31 +91,16 @@ public class VanillaPricer implements Pricer {
         Date maturity = DateUtils.AddPeriod(settle, tenor + "Y");
         setMaturityDate(dateFormat.format(maturity));
 
-        // Calculate coupon dates
-        ArrayList<Coupon> fixedCoupons = DateUtils.GetCouponDates(settle, maturity, fixFrq);
-        ArrayList<Coupon> floatCoupons = DateUtils.GetCouponDates(settle, maturity, floatFrq);
-        fixedCoupons.sort((x, y) -> x.getEndDate().compareTo(y.getEndDate()));
-        floatCoupons.sort((x, y) -> x.getEndDate().compareTo(y.getEndDate()));
-        /*
-        System.out.println();
-        for (Coupon cpn : floatCoupons)
-        {
-            System.out.println(String.format("Start: %tD, End: %tD", cpn.getStartDate(), cpn.getEndDate()));
-        }
-        */
-
         // Read discount curve from file
-        //URL url = VanillaPricer.class.getResource(args[9]);
-        FileReader f = new FileReader(marketDataPath);
-        BufferedReader reader = new BufferedReader(f);
+        MarketDataReaderSingleton mdr = MarketDataReaderSingleton.getInstance(marketDataPath);
         Hashtable<String, Double> discountCurve = new Hashtable<String, Double>();
         String line = "";
-        while ((line = reader.readLine()) != null)
+        while ((line = mdr.readLine()) != null)
         {
         	String point[] = line.split("\t");
         	discountCurve.put(point[0], Double.parseDouble(point[1]));
         }
-        reader.close();
+        mdr.close();
         
         ArrayList<ZeroCouponDataPoint> zcCurve = new ArrayList<ZeroCouponDataPoint>();
         Set<String> periods = discountCurve.keySet();
@@ -139,48 +117,22 @@ public class VanillaPricer implements Pricer {
         }
         */
 
-        // Calculate coupon rates
-        floatCoupons.forEach(x -> x.CalculateDiscountFactor(zcCurve));
-        // Set current float
-        if (currentFloat > 0)
-        {
-            floatCoupons.get(0).setForwardRate(currentFloat);
-        }
-        floatCoupons.forEach(x -> x.CalculateCashFlow(notional, spread));
-        // Re-calculate final cash flow (with redemption)
-        floatCoupons.get(floatCoupons.size() - 1).CalculateCashFlow(notional, spread, true);
-        setFloatCoupons(floatCoupons);
-        /*
-        for (Coupon c : floatCoupons)
-        {
-            System.out.println(String.format("Date: %tD, Rate: %.6f, Cash flow: %.2f", c.getEndDate(), c.getForwardRate(), c.getCashFlow()));
-        }
-        */
-
-        // Calculate float leg NPV
-        double floatLegNpv = floatCoupons.stream().mapToDouble(x -> x.getCashFlow() * x.getEndDiscountFactor()).sum();
+        // Calculate coupon dates
+        CouponList floatCoupons = new FloatingCouponList();
+        floatCoupons.generateCoupons(settle, maturity, floatFrq, notional, null, currentFloat, spread, zcCurve);
+        setFloatCoupons(floatCoupons.coupons());
+        double floatLegNpv = floatCoupons.getLegNpv();
         setFloatLegNpv(floatLegNpv);
         double targetLegNpv = floatLegNpv - npv;
-        //System.out.println(String.format("Float leg NPV = %1$.2f, Target leg NPV = %2$.2f", floatLegNpv, targetLegNpv));
-
+        
+        CouponList fixedCoupons = new FixedCouponList();
+        fixedCoupons.generateCoupons(settle, maturity, fixFrq, notional, null, null, null, zcCurve);
         // Solve for coupon rate
-        fixedCoupons.forEach(x -> x.CalculateDiscountFactor(zcCurve));
-        double fixedRate = solver.Solve(notional, fixedCoupons, floatCoupons, targetLegNpv);
-        fixedCoupons.forEach(x -> x.setForwardRate(fixedRate));
-        fixedCoupons.forEach(x -> x.CalculateCashFlow(notional));
-        // Re-calculate final cash flow (with redemption)
-        fixedCoupons.get(fixedCoupons.size() - 1).CalculateCashFlow(notional, 0, true);
-        double fixedLegNpv = fixedCoupons.stream().mapToDouble(x -> x.getCashFlow() * x.getEndDiscountFactor()).sum();
-        setFixedLegNpv(fixedLegNpv);
-        setFixedCoupons(fixedCoupons);
-        /*
-        for (Coupon c : fixedCoupons)
-        {
-        	System.out.println(String.format("Date: %tD, Rate: %.6f, Cash flow: %.2f", c.getEndDate(), c.getForwardRate(), c.getCashFlow()));
-        }
-        */
-
-        //System.out.println(String.format("Calculated fixed rate: %.6f", fixedRate));
+        double fixedRate = solver.Solve(notional, fixedCoupons.coupons(), floatCoupons.coupons(), targetLegNpv);
+        fixedCoupons.generateCoupons(settle, maturity, fixFrq, notional, fixedRate, null, null, zcCurve);
+        setFixedLegNpv(fixedCoupons.getLegNpv());
+        setFixedCoupons(fixedCoupons.coupons());
+       
         setCalculatedFixedRate(fixedRate);
         notifyObservers();
 	}
@@ -345,22 +297,22 @@ public class VanillaPricer implements Pricer {
 		return String.format("%.2f", _fixedLegNpv);
 	}
 	
-	public void setFixedCoupons(ArrayList<Coupon> coupons)
+	public void setFixedCoupons(Iterator<Coupon> coupons)
 	{
 		_fixedCoupons = coupons;
 	}
 	
-	public ArrayList<Coupon> getFixedCoupons()
+	public Iterator<Coupon> getFixedCoupons()
 	{
 		return _fixedCoupons;
 	}
 	
-	public void setFloatCoupons(ArrayList<Coupon> coupons)
+	public void setFloatCoupons(Iterator<Coupon> coupons)
 	{
 		_floatCoupons = coupons;
 	}
 	
-	public ArrayList<Coupon> getFloatCoupons()
+	public Iterator<Coupon> getFloatCoupons()
 	{
 		return _floatCoupons;
 	}
