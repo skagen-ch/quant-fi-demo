@@ -3,60 +3,69 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.ArrayList;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.TimeZone;
 
-public class VanillaPricer {
+public class VanillaPricer implements Pricer {
+	private ArrayList<PricerObserver> observers = new ArrayList<PricerObserver>();
 	private ArrayList<ZeroCouponDataPoint> _zcCurve;
+	private Date valuationDate;
+	private Date settle;
+	private String fixFrq;
+	private String floatFrq;
+	private double notional;
+	private String tenor;
+	private double currentFloat;
+	private double spread;
+	private double npv;
 	private String _maturityDate;
 	private Double _calculatedFixedRate;
 	private Double _fixedLegNpv;
 	private Double _floatLegNpv;
 	private ArrayList<Coupon> _fixedCoupons;
 	private ArrayList<Coupon> _floatCoupons;
+	private Solver solver;
+	TimeZone tz	= TimeZone.getTimeZone("UTC");
+	SimpleDateFormat dateFormat	 = new SimpleDateFormat("dd/MM/yyyy");
 	
-	public void main(String[] args) throws java.text.ParseException, NumberFormatException, IOException {
-		TimeZone tz	= TimeZone.getTimeZone("UTC");
-		SimpleDateFormat dateFormat	 = new SimpleDateFormat("dd/MM/yyyy");
+    Hashtable<String, Frequency> frqDict = new Hashtable<String, Frequency>()
+    {/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+	{
+        put("A", Frequency.Annual);
+        put("S", Frequency.SemiAnnual);
+        put("Q", Frequency.Quarterly);
+        put("M", Frequency.Monthly);
+    }};
+	
+	public VanillaPricer() {
+		solver = new ClosedSolver();
 		dateFormat.setTimeZone(tz);
+	}
+	
+	public void calculate(String marketDataPath) throws NumberFormatException, IOException {
         Date valueDate = null;
         Date settle = null;
         
-        // Get inputs
-        String dateAsString = args[0];
-        try
-        {
-        	valueDate = dateFormat.parse(dateAsString);
-        }
-        catch (ParseException e)
-        {
-        	e.printStackTrace();
-        }
-        
-        dateAsString = args[1];
-        try
-        {
-        	settle = dateFormat.parse(dateAsString);
-        }
-        catch (ParseException e)
-        {
-        	e.printStackTrace();
-        }
+    	valueDate = getValuationDate();
+        settle = getSettlementDate();
 
-        String fixFrq = args[2];
-        String floatFrq = args[3];
-        double notional = Double.parseDouble(args[4]);
-        String tenor = args[5];
-        double currentFloat = Double.parseDouble(args[6]);
-        double spread = Double.parseDouble(args[7])/10000.0;
-        double npv = Double.parseDouble(args[8]);
+        Frequency fixFrq = getFixedFrequency();
+        Frequency floatFrq = getFloatFrequency();
+        
+        double notional = getNotional();
+        String tenor = getTenor();
+        double currentFloat = getCurrentFloat();
+        double spread = getSpread();
+        double npv = getNpv();
         
         // Inputs for debugging
         /*
@@ -90,20 +99,8 @@ public class VanillaPricer {
         setMaturityDate(dateFormat.format(maturity));
 
         // Calculate coupon dates
-        Hashtable<String, Frequency> frqDict = new Hashtable<String, Frequency>()
-        {/**
-			 * 
-			 */
-			private static final long serialVersionUID = 1L;
-
-		{
-            put("A", Frequency.Annual);
-            put("S", Frequency.SemiAnnual);
-            put("Q", Frequency.Quarterly);
-            put("M", Frequency.Monthly);
-        }};
-        ArrayList<Coupon> fixedCoupons = DateUtils.GetCouponDates(settle, maturity, frqDict.get(fixFrq));
-        ArrayList<Coupon> floatCoupons = DateUtils.GetCouponDates(settle, maturity, frqDict.get(floatFrq));
+        ArrayList<Coupon> fixedCoupons = DateUtils.GetCouponDates(settle, maturity, fixFrq);
+        ArrayList<Coupon> floatCoupons = DateUtils.GetCouponDates(settle, maturity, floatFrq);
         fixedCoupons.sort((x, y) -> x.getEndDate().compareTo(y.getEndDate()));
         floatCoupons.sort((x, y) -> x.getEndDate().compareTo(y.getEndDate()));
         /*
@@ -116,7 +113,7 @@ public class VanillaPricer {
 
         // Read discount curve from file
         //URL url = VanillaPricer.class.getResource(args[9]);
-        FileReader f = new FileReader(args[9]);
+        FileReader f = new FileReader(marketDataPath);
         BufferedReader reader = new BufferedReader(f);
         Hashtable<String, Double> discountCurve = new Hashtable<String, Double>();
         String line = "";
@@ -168,7 +165,7 @@ public class VanillaPricer {
 
         // Solve for coupon rate
         fixedCoupons.forEach(x -> x.CalculateDiscountFactor(zcCurve));
-        double fixedRate = Solver.Solve(notional, fixedCoupons, floatCoupons, targetLegNpv);
+        double fixedRate = solver.Solve(notional, fixedCoupons, floatCoupons, targetLegNpv);
         fixedCoupons.forEach(x -> x.setForwardRate(fixedRate));
         fixedCoupons.forEach(x -> x.CalculateCashFlow(notional));
         // Re-calculate final cash flow (with redemption)
@@ -185,6 +182,117 @@ public class VanillaPricer {
 
         //System.out.println(String.format("Calculated fixed rate: %.6f", fixedRate));
         setCalculatedFixedRate(fixedRate);
+        notifyObservers();
+	}
+
+	//GETTERS AND SETTERS
+	
+	@Override
+	public Date getValuationDate() {
+		return valuationDate;
+	}
+
+	@Override
+	public void setValuationDate(String valuationDate) {
+        try
+        {
+        	this.valuationDate = dateFormat.parse(valuationDate);
+        }
+        catch (ParseException e)
+        {
+        	e.printStackTrace();
+        }
+	}
+
+	@Override
+	public Date getSettlementDate() {
+		return settle;
+	}
+
+	@Override
+	public void setSettlementDate(String settle) {
+        try
+        {
+        	this.settle = dateFormat.parse(settle);
+        }
+        catch (ParseException e)
+        {
+        	e.printStackTrace();
+        }
+	}
+	
+	@Override
+	public void setFixedFrequency(String frq)
+	{
+		fixFrq = frq;
+	}
+	
+	@Override
+	public Frequency getFixedFrequency()
+	{
+		return frqDict.get(fixFrq);
+	}
+	
+	@Override
+	public void setFloatFrequency(String frq)
+	{
+		floatFrq = frq;
+	}
+	
+	@Override
+	public Frequency getFloatFrequency()
+	{
+		return frqDict.get(floatFrq);
+	}
+
+	@Override
+	public double getNotional() {
+		return notional;
+	}
+
+	@Override
+	public void setNotional(String notional) {
+		this.notional = Double.parseDouble(notional);;
+	}
+
+	@Override
+	public String getTenor() {
+		return tenor;
+	}
+
+	@Override
+	public void setTenor(String tenor) {
+		this.tenor = tenor;
+	}
+
+	@Override
+	public void setCurrentFloat(String rate) {
+		this.currentFloat = Double.parseDouble(rate);
+	}
+
+	@Override
+	public double getCurrentFloat() {
+		return this.currentFloat;
+	}
+
+	@Override
+	public void setSpread(String spread) {
+		this.spread = Double.parseDouble(spread)/10000.0;
+	}
+
+	@Override
+	public double getSpread() {
+		return this.spread;
+	}
+
+	@Override
+	public void setNpv(String npv) {
+		this.npv = Double.parseDouble(npv);
+	}
+
+	@Override
+	public double getNpv() {
+		return this.npv;
 	}
 	
 	public void setZcCurve(ArrayList<ZeroCouponDataPoint> curve)
@@ -255,6 +363,25 @@ public class VanillaPricer {
 	public ArrayList<Coupon> getFloatCoupons()
 	{
 		return _floatCoupons;
+	}
+	
+	//OBSERVER PATTERN IMPLEMENTATION
+	
+	public void registerObserver(PricerObserver o) {
+		observers.add(o);
+	}
+
+	public void removeObserver(PricerObserver o) {
+		int i = observers.indexOf(o);
+		if (i >= 0) {
+			observers.remove(i);
+		}
+	}
+	
+	public void notifyObservers() {
+		for (PricerObserver observer : observers) {
+			observer.update();
+		}
 	}
 
 }

@@ -43,7 +43,7 @@ public class zcCurvePanel extends JPanel {
 		
 	}
 	
-	public static void setTblZcCurve(ArrayList<ZeroCouponDataPoint> zc)
+	public void setTblZcCurve(ArrayList<ZeroCouponDataPoint> zc)
 	{
 		TimeZone tz	= TimeZone.getTimeZone("UTC");
 		SimpleDateFormat dateFormat	 = new SimpleDateFormat("dd/MM/yyyy");
